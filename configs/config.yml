@@ -18,8 +18,8 @@ stages:
     minimize_metric: False
 
   criterion_params:
-    criterion: CrossEntropyLoss
-#    criterion: LabelSmoothingCrossEntropy
+#    criterion: CrossEntropyLoss
+    criterion: LabelSmoothingCrossEntropy
 
   data_params:
     batch_size: 32
@@ -27,8 +27,8 @@ stages:
     drop_last: False
 
     image_size: &image_size 224
-    train_csv: "./preprocessing/csv/train_face.csv"
-    valid_csv: "./preprocessing/csv/valid_face.csv"
+    train_csv: "./preprocessing/csv/train_face_clean.csv"
+    valid_csv: "./preprocessing/csv/valid_face_clean.csv"
     root: "/media/ngxbac/Bac/dataset/KERC/faces/"
 
   stage0:
@@ -50,7 +50,7 @@ stages:
 
     callbacks_params: &callback_params
       loss:
-        callback: CriterionCallback
+        callback: LabelSmoothCriterionCallback
       optimizer:
         callback: OptimizerCallback
       accuracy:

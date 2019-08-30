@@ -11,7 +11,7 @@ for model in densenet121 fishnet99 inceptionresnetv2 inception_v3 inception_v4 r
     python src/optuna_search.py search-svm  --feature_dir=$save_feature_dir \
                                             --train_csv=./preprocessing/csv/train_face_clean.csv \
                                             --valid_csv=./preprocessing/csv/valid_face_clean.csv \
-                                            --n_trials=200 \
+                                            --n_trials=100 \
                                             --feature_name=$model \
                                             --out_config=./ml_configs/ \
                                             --classifier=svm
