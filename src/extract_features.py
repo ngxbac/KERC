@@ -1,71 +1,102 @@
-#!/usr/bin/env python
-from collections import OrderedDict  # noqa F401
+import pandas as pd
+import torch.nn.functional as Ftorch
 from torch.utils.data import DataLoader
-from catalyst.dl.experiments import SupervisedRunner
-from catalyst.dl.callbacks import InferCallback, CheckpointCallback
-import json
-from dataset import FrameDataset
-import models
-from augmentation import valid_aug
+import os
+from tqdm import *
+
+from models import *
+from augmentation import *
+from dataset import *
+
 import click
+
+
+device = torch.device('cuda')
 
 
 @click.group()
 def cli():
-    print("Extract features")
+    print("Extract features from pretrained models")
+
+
+def predict(model, loader):
+    model.eval()
+    preds = []
+    with torch.no_grad():
+        for dct in tqdm(loader, total=len(loader)):
+            images = dct['images'].to(device)
+            pred = model.extract_features(images)
+            pred = pred.detach().cpu().numpy()
+            preds.append(pred)
+
+    preds = np.concatenate(preds, axis=0)
+    return preds
+
+
+def get_model_byname(model_name):
+    if model_name == 'vggresnet':
+        model = finetune_vggresnet(n_class=7)
+    elif model_name == 'fishnet99':
+        model = finetune_fishnet({
+            "arch": model_name,
+            "pretrained": None,
+            "n_class": 7
+        })
+    else:
+        model = finetune({
+            "arch": model_name,
+            "n_class": 7,
+            "image_size": 256,
+        })
+    return model
 
 
 @cli.command()
-@click.option('--model_name', type=str, default='vggresnet')
-@click.option('--csv_file', type=str, default=None)
-@click.option('--dataset', type=str, default='train')
-@click.option('--feature_root', type=str)
-def extract_features(
-        model_name,
-        csv_file,
-        dataset,
-        feature_root,
-    ):
-    log_dir = f"{feature_root}/{model_name}"
-    with open(f"{log_dir}/config.json") as f:
-        config = json.load(f)
+@click.option('--csv_file', type=str)
+@click.option('--root', type=str)
+@click.option('--model', type=str)
+@click.option('--checkpoint', type=str)
+@click.option('--save_feature_dir', type=str)
+def extract(
+    csv_file,
+    root,
+    model,
+    checkpoint,
+    save_feature_dir
+):
+    print("\n")
+    print("****" * 50)
+    print("CSV: ", csv_file)
+    print("root: ", root)
+    print("model: ", model)
+    print("checkpoint: ", checkpoint)
+    print("save_feature_dir: ", save_feature_dir)
+    print("****" * 50)
 
-    model_function = getattr(models, config['model_params']['model'])
-    model = model_function(config['model_params']['params'])
-    model.extract_feature = True
+    model = get_model_byname(model)
+    checkpoint = torch.load(checkpoint)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model = model.to(device)
 
-    loaders = OrderedDict()
-    if csv_file:
-        inferset = FrameDataset(
-            csv_file=csv_file,
-            transform=valid_aug(),
-            mode='infer'
-        )
-
-        infer_loader = DataLoader(
-            dataset=inferset,
-            num_workers=4,
-            shuffle=False,
-            batch_size=16
-        )
-
-        loaders[f'infer_{dataset}'] = infer_loader
-
-    checkpoint = f"{log_dir}/checkpoints/best.pth"
-    callbacks = [
-        CheckpointCallback(resume=checkpoint),
-        InferCallback(out_dir=log_dir, out_prefix="/predicts_omg/predictions." + "{suffix}" + f".npy")
-    ]
-    runner = SupervisedRunner(
-        input_key='image',
-    )
-    runner.infer(
-        model,
-        loaders,
-        callbacks,
-        verbose=True,
+    # Dataset
+    dataset = KERCDataset(
+        csv_file=csv_file,
+        transform=valid_aug(224),
+        mode='test',
+        root=root
     )
 
+    loader = DataLoader(
+        dataset=dataset,
+        batch_size=32,
+        shuffle=False,
+        num_workers=4,
+    )
 
-if __name__ == "__main__":
+    features = predict(model, loader)
+    os.makedirs(save_feature_dir, exist_ok=True)
+    np.save(save_feature_dir + "/features.npy", features)
+
+
+if __name__ == '__main__':
     cli()

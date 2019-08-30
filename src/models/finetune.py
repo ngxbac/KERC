@@ -47,6 +47,12 @@ class Finetune(ModelAbstract):
             return x
         return self.model(x)
 
+    def extract_features(self, x):
+        x = self.model._features(x)
+        x = self.model.pool(x)
+        x = x.view(x.size(0), -1)
+        return x
+
     def reset_classifier(self):
         in_features = self.model._classifier.in_features
         self.model._classifier = nn.Linear(
@@ -132,6 +138,22 @@ class FinetuneVGGResnet(ModelAbstract):
             return x
 
         x = self.fc(x)
+        return x
+
+    def extract_features(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+
+        x = x.view(x.size(0), -1)
         return x
 
     def reset_classifier(self):
@@ -262,6 +284,17 @@ class FinetuneFishNet(ModelAbstract):
             return score_feat
         else:
             return out
+
+    def extract_features(self, x):
+        x = self.model.conv1(x)
+        x = self.model.conv2(x)
+        x = self.model.conv3(x)
+        x = self.model.pool1(x)
+        score, score_feat = self.model.fish(x)
+        # 1*1 output
+        score_feat = F.adaptive_avg_pool2d(score_feat, 1)
+        score_feat = score_feat.view(x.size(0), -1)
+        return score_feat
 
     def reset_classifier(self):
         pass
