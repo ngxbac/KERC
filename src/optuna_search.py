@@ -62,15 +62,16 @@ class Objective(object):
 
     def get_classifier(self, classifier, trial):
         if classifier == 'svm':
-            svc_c = trial.suggest_loguniform('svc_c', 5e-4, 1)
-            clf = SVC(C=svc_c, kernel='linear')
+            C = trial.suggest_loguniform('svc_c', 5e-4, 1)
+            clf = SVC(C=C, kernel='linear', random_state=2411)
 
         return clf
 
     def __call__(self, trial):
         clf = self.get_classifier(self.classifier, trial)
         clf.fit(self.X_train, self.y_train)
-        accuracy = clf.score(self.X_valid, self.y_valid)
+        y_pred = clf.predict(self.X_valid)
+        accuracy = accuracy_score(self.y_valid, y_pred)
         return accuracy
 
 

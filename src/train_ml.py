@@ -12,6 +12,8 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import make_pipeline
 from sklearn.calibration import CalibratedClassifierCV
+import json
+import pickle
 
 
 @click.group()
@@ -80,14 +82,38 @@ def train_svm_calib(X_train, y_train, X_valid, y_valid):
     return train_acc, val_acc, SVM_C, decision_values, clf, pred
 
 
+def load_config(config_dir, classifier, feature_name):
+    with open(f'{config_dir}/{feature_name}/{classifier}/config.json', "r") as f:
+        config = json.load(f)
+
+    return config
+
+
+def save_model(save_dir, classifier, feature_name, model):
+    with open(f'{save_dir}/{feature_name}/{classifier}/model.pkl', 'wb') as f:
+        pickle.dump(model, f)
+
+
+def save_prediction(save_dir, classifier, feature_name, pred):
+    np.save(f'{save_dir}/{feature_name}/{classifier}/valid.npy', pred)
+
+
 @cli.command()
 @click.option('--feature_dir', type=str)
 @click.option('--train_csv', type=str)
 @click.option('--valid_csv', type=str)
+@click.option('--classifier', type=str, default='svm')
+@click.option('--config_dir', type=str, default='ml_configs')
+@click.option('--feature_name', type=str)
+@click.option('--save_dir', type=str)
 def train_svm(
     feature_dir,
     train_csv,
-    valid_csv
+    valid_csv,
+    config_dir,
+    classifier,
+    feature_name,
+    save_dir,
 ):
     train_df = pd.read_csv(train_csv)
     valid_df = pd.read_csv(valid_csv)
@@ -125,12 +151,18 @@ def train_svm(
         X_video_train[:, i:i + feature_dims] = scaler.fit_transform(X_video_train[:, i:i + feature_dims])
         X_video_valid[:, i:i + feature_dims] = scaler.transform(X_video_valid[:, i:i + feature_dims])
 
-    model = make_pipeline(StandardScaler(), SVC(probability=True, kernel='linear'))
-    # model = CalibratedClassifierCV(model, cv=5)
+    config = load_config(config_dir, classifier, feature_name)
+    model = SVC(kernel='linear', probability=True, C=config['svc_c'])
     model.fit(X_video_train, y_video_train)
     y_pred = model.predict_proba(X_video_valid)
-    y_pred = np.argmax(y_pred, axis=1)
-    print(accuracy_score(y_video_valid, y_pred))
+    y_pred_cls = np.argmax(y_pred, axis=1)
+    print(feature_name)
+    print("Accuracy ", accuracy_score(y_video_valid, y_pred_cls))
+
+    # Save model and valid's prediction
+    os.makedirs(f'{save_dir}/{feature_name}/{classifier}/', exist_ok=True)
+    save_model(save_dir, classifier, feature_name, model)
+    save_prediction(save_dir, classifier, feature_name, y_pred)
 
 
 if __name__ == '__main__':
