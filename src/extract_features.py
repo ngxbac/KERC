@@ -81,7 +81,10 @@ def extract(
     # Dataset
     dataset = KERCDataset(
         csv_file=csv_file,
-        transform=valid_aug(224),
+        transform=Compose([
+            Resize(224, 224),
+            Normalize(mean=MEAN_RGB, std=STD, max_pixel_value=1)
+        ], p=1),
         mode='test',
         root=root
     )
@@ -90,7 +93,7 @@ def extract(
         dataset=dataset,
         batch_size=32,
         shuffle=False,
-        num_workers=4,
+        num_workers=0,
     )
 
     features = predict(model, loader)
