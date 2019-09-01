@@ -35,8 +35,8 @@ class TemporalLSTM(nn.Module):
         max_pool_g, _ = torch.max(lstm_out, 1)
 
         pool = torch.cat([avg_pool_g, max_pool_g, h_lstm_atten], 1)
-        return pool
-        # return self.fc(pool)
+        # return pool
+        return self.fc(pool)
 
     def freeze(self):
         pass
