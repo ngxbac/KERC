@@ -38,6 +38,12 @@ class TemporalLSTM(nn.Module):
         return pool
         # return self.fc(pool)
 
+    def freeze(self):
+        pass
+
+    def unfreeze(self):
+        pass
+
 
 class TemporalContextLSTM(nn.Module):
     def __init__(self, hidden_size=128, n_class=7):

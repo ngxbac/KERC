@@ -42,7 +42,8 @@ def pad_if_need(paths, size):
 
 
 def pooling_video(video_df: pd.DataFrame, video_features: np.array, stride=2, pool_out=16):
-    video_df = video_df.sort_values(by='file')
+    video_df['frame_num'] = video_df['frame_name'].apply(lambda x: int(x.split('.')[0].split('_')[-1]))
+    video_df = video_df.sort_values(by='frame_num')
     video_features = video_features[video_df.index]
 
     pooled_features = video_features

@@ -152,6 +152,26 @@ class Experiment(ConfigExperiment):
             )
             datasets["valid"] = valid_dataset
 
+        """
+        Temporal dataset
+        """
+        train_pool = kwargs.get("train_pool", None)
+        valid_pool = kwargs.get("valid_pool", None)
+
+        if train_pool is not None:
+            train_dataset = EmotiwPoolingFeature(
+                feature_pkl=train_pool,
+                mode="train"
+            )
+            datasets["train"] = train_dataset
+
+        if valid_pool is not None:
+            valid_dataset = EmotiwPoolingFeature(
+                feature_pkl=valid_pool,
+                mode="train"
+            )
+            datasets["valid"] = valid_dataset
+
         return datasets
 
 

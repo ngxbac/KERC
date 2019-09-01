@@ -2,6 +2,7 @@ import numpy as np
 import os
 import cv2
 import pandas as pd
+import pickle
 from torch.utils.data import Dataset
 from sklearn.preprocessing import LabelEncoder
 
@@ -222,5 +223,44 @@ class KERCDataset(Dataset):
 
         return {
             "images": image,
+            "targets": label
+        }
+
+
+class EmotiwPoolingFeature(Dataset):
+
+    def __init__(self, feature_pkl, mode="train"):
+
+        with open(feature_pkl, 'rb') as f:
+            features = pickle.load(f)
+
+        self.mode = mode
+        self.all_videos = features.keys()
+        self.emotions = []
+        self.features = []
+        for video in self.all_videos:
+            video_feature = features[video]['feature']
+            emotion = features[video]['emotion']
+
+            self.emotions.append(emotion)
+            self.features.append(video_feature)
+
+        le = LabelEncoder()
+        self.emotions = le.fit_transform(self.emotions)
+
+    def __len__(self):
+        return len(self.features)
+
+    def __getitem__(self, idx):
+
+        feature = self.features[idx]
+
+        if self.mode == "train":
+            label = self.emotions[idx]
+        else:
+            label = -1
+
+        return {
+            "images": feature,
             "targets": label
         }

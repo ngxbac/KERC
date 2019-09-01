@@ -21,6 +21,7 @@ registry.Model(DSResnetAttbranch)
 registry.Model(GAIN)
 registry.Model(GCAM)
 registry.Model(GAINMask)
+registry.Model(TemporalLSTM)
 
 # Register callbacks
 registry.Callback(LabelSmoothCriterionCallback)
