@@ -7,18 +7,22 @@ export PYTHONPATH
 
 echo "Training..."
 
-for model in densenet121 fishnet99 inception_v3 inception_v4 vggresnet se_resnet50 se_resnext50_32x4d; do
+# densenet121 fishnet99 inceptionresnetv2 inception_v3 inception_v4 resnet18 resnet34 resnet50 se_resnet50 se_resnext50_32x4d vggresnet
+for model in inceptionresnetv2 ; do
 
     if [ $model == 'densenet121' ]
     then
         n_features=1024
-    elif [ $model == 'se_resnet50' ] || [ $model == 'se_resnext50_32x4d' ] || [ $model == 'inception_v3' ] || [ $model == 'vggresnet' ]
+    elif [ $model == 'se_resnet50' ] || [ $model == 'se_resnext50_32x4d' ] || [ $model == 'inception_v3' ] || [ $model == 'vggresnet' ] || [ $model == 'resnet50' ]
     then
         n_features=2048
     elif [ $model == 'fishnet99' ]
     then
         n_features=1056
-    elif [ $model == 'inception_v4' ]
+    elif [ $model == 'resnet18' ] || [ $model == 'resnet34' ]
+    then
+        n_features=512
+    elif [ $model == 'inception_v4' ] || [ $model == 'inceptionresnetv2' ]
     then
         n_features=1536
     fi
