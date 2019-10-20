@@ -105,23 +105,7 @@ def save_prediction(save_dir, classifier, feature_name, fold, pred):
         np.save(f'{save_dir}/{feature_name}/{classifier}/valid.npy', pred)
 
 
-@cli.command()
-@click.option('--feature_dir', type=str)
-@click.option('--train_csv', type=str)
-@click.option('--valid_csv', type=str)
-@click.option('--classifier', type=str, default='svm')
-@click.option('--config_dir', type=str, default='ml_configs')
-@click.option('--feature_name', type=str)
-@click.option('--save_dir', type=str)
-def train_svm(
-    feature_dir,
-    train_csv,
-    valid_csv,
-    config_dir,
-    classifier,
-    feature_name,
-    save_dir,
-):
+def get_data(train_csv, valid_csv, feature_dir):
     train_df = pd.read_csv(train_csv)
     valid_df = pd.read_csv(valid_csv)
 
@@ -158,6 +142,28 @@ def train_svm(
         X_video_train[:, i:i + feature_dims] = scaler.fit_transform(X_video_train[:, i:i + feature_dims])
         X_video_valid[:, i:i + feature_dims] = scaler.transform(X_video_valid[:, i:i + feature_dims])
 
+    return X_video_train, X_video_valid, y_video_train, y_video_valid
+
+
+@cli.command()
+@click.option('--feature_dir', type=str)
+@click.option('--train_csv', type=str)
+@click.option('--valid_csv', type=str)
+@click.option('--classifier', type=str, default='svm')
+@click.option('--config_dir', type=str, default='ml_configs')
+@click.option('--feature_name', type=str)
+@click.option('--save_dir', type=str)
+def train_svm(
+    feature_dir,
+    train_csv,
+    valid_csv,
+    config_dir,
+    classifier,
+    feature_name,
+    save_dir,
+):
+    X_video_train, X_video_valid, y_video_train, y_video_valid = get_data(train_csv, valid_csv, feature_dir)
+
     config = load_config(config_dir, classifier, feature_name)
     model = SVC(kernel='linear', probability=True, C=config['svc_c'])
     model.fit(X_video_train, y_video_train)
@@ -168,8 +174,8 @@ def train_svm(
 
     # Save model and valid's prediction
     os.makedirs(f'{save_dir}/{feature_name}/{classifier}/', exist_ok=True)
-    save_model(save_dir, classifier, feature_name, model)
-    save_prediction(save_dir, classifier, feature_name, y_pred)
+    save_model(save_dir, classifier, feature_name, None, model)
+    save_prediction(save_dir, classifier, feature_name, None, y_pred)
 
 
 @cli.command()
@@ -189,41 +195,7 @@ def train_svm_kfold(
     feature_name,
     save_dir,
 ):
-    train_df = pd.read_csv(train_csv)
-    valid_df = pd.read_csv(valid_csv)
-
-    le = LabelEncoder()
-    train_df['emotion'] = le.fit_transform(train_df['emotion'])
-    valid_df['emotion'] = le.transform(valid_df['emotion'])
-
-    X_train = np.load(f"{feature_dir}/train/features.npy")
-    X_valid = np.load(f"{feature_dir}/valid/features.npy")
-
-    y_train = train_df['emotion'].values
-    y_valid = valid_df['emotion'].values
-
-    assert X_train.shape[0] == train_df.shape[0]
-    assert X_valid.shape[0] == valid_df.shape[0]
-
-    feature_functions = ['mean', 'max', 'std']
-
-    X_video_train, y_video_train = feature_engineering(
-        X=X_train, y=y_train, df=train_df,
-        feature_funcs=['mean', 'max', 'std']
-    )
-
-    X_video_valid, y_video_valid = feature_engineering(
-        X=X_valid, y=y_valid, df=valid_df,
-        feature_funcs=['mean', 'max', 'std']
-    )
-
-    n_features = len(feature_functions)
-    feature_dims = X_video_train.shape[1] // n_features
-    print("Feature dims: ", feature_dims)
-    for i in range(n_features):
-        scaler = MinMaxScaler()
-        X_video_train[:, i:i + feature_dims] = scaler.fit_transform(X_video_train[:, i:i + feature_dims])
-        X_video_valid[:, i:i + feature_dims] = scaler.transform(X_video_valid[:, i:i + feature_dims])
+    X_video_train, X_video_valid, y_video_train, y_video_valid = get_data(train_csv, valid_csv, feature_dir)
 
     X = np.concatenate([X_video_train, X_video_valid], axis=0)
     y = np.concatenate([y_video_train, y_video_valid], axis=0)
