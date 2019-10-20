@@ -17,12 +17,13 @@ export LANG=C.UTF-8
 #done
 
 
+classifier=RandomForestClassifier
 for model in densenet121 fishnet99 inceptionresnetv2 inception_v3 inception_v4 resnet18 resnet34 resnet50 se_resnet50 se_resnext50_32x4d vggresnet; do
-    python src/train_ml.py train-svm-kfold    --feature_dir=/media/ngxbac/DATA/logs_kerc/features/$model/ \
+    python src/train_ml.py train-kfold    --feature_dir=/media/ngxbac/DATA/logs_kerc/features/$model/ \
                                         --train_csv=./preprocessing/csv/train_face_clean.csv \
                                         --valid_csv=./preprocessing/csv/valid_face_clean.csv \
                                         --config_dir=./ml_configs/ \
-                                        --classifier=svm \
+                                        --classifier=$classifier \
                                         --feature_name=$model \
                                         --save_dir=./ml_models_kfold/
 done

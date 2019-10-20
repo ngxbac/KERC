@@ -7,6 +7,8 @@ import click
 from scipy.stats import skew, kurtosis
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC, LinearSVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import StratifiedKFold, cross_val_score
@@ -18,7 +20,7 @@ import pickle
 
 @click.group()
 def cli():
-    print("Train KERC with SVM")
+    print("Train KERC with sklearn")
 
 
 FEATURE_FUNCS = {
@@ -186,7 +188,7 @@ def train_svm(
 @click.option('--config_dir', type=str, default='ml_configs')
 @click.option('--feature_name', type=str)
 @click.option('--save_dir', type=str)
-def train_svm_kfold(
+def train_kfold(
     feature_dir,
     train_csv,
     valid_csv,
@@ -195,6 +197,7 @@ def train_svm_kfold(
     feature_name,
     save_dir,
 ):
+    print("Classifier: {}".format(classifier))
     X_video_train, X_video_valid, y_video_train, y_video_valid = get_data(train_csv, valid_csv, feature_dir)
 
     X = np.concatenate([X_video_train, X_video_valid], axis=0)
@@ -207,7 +210,12 @@ def train_svm_kfold(
         y_train_fold, y_valid_fold = y[train_idx], y[valid_idx]
 
         config = load_config(config_dir, classifier, feature_name)
-        model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+        if classifier == 'svm':
+            model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+        elif classifier == 'RandomForestClassifier':
+            model = RandomForestClassifier(n_estimators=config['n_estimators'])
+        else:
+            raise ValueError("Not support classifier: {}".format(classifier))
         model.fit(X_train_fold, y_train_fold)
 
         y_pred = model.predict_proba(X_valid_fold)
