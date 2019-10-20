@@ -89,13 +89,20 @@ def load_config(config_dir, classifier, feature_name):
     return config
 
 
-def save_model(save_dir, classifier, feature_name, model):
-    with open(f'{save_dir}/{feature_name}/{classifier}/model.pkl', 'wb') as f:
-        pickle.dump(model, f)
+def save_model(save_dir, classifier, feature_name, fold, model):
+    if fold is not None:
+        with open(f'{save_dir}/{feature_name}/{classifier}/model_{fold}.pkl', 'wb') as f:
+            pickle.dump(model, f)
+    else:
+        with open(f'{save_dir}/{feature_name}/{classifier}/model.pkl', 'wb') as f:
+            pickle.dump(model, f)
 
 
-def save_prediction(save_dir, classifier, feature_name, pred):
-    np.save(f'{save_dir}/{feature_name}/{classifier}/valid.npy', pred)
+def save_prediction(save_dir, classifier, feature_name, fold, pred):
+    if fold is not None:
+        np.save(f'{save_dir}/{feature_name}/{classifier}/valid_{fold}.npy', pred)
+    else:
+        np.save(f'{save_dir}/{feature_name}/{classifier}/valid.npy', pred)
 
 
 @cli.command()
@@ -163,6 +170,87 @@ def train_svm(
     os.makedirs(f'{save_dir}/{feature_name}/{classifier}/', exist_ok=True)
     save_model(save_dir, classifier, feature_name, model)
     save_prediction(save_dir, classifier, feature_name, y_pred)
+
+
+@cli.command()
+@click.option('--feature_dir', type=str)
+@click.option('--train_csv', type=str)
+@click.option('--valid_csv', type=str)
+@click.option('--classifier', type=str, default='svm')
+@click.option('--config_dir', type=str, default='ml_configs')
+@click.option('--feature_name', type=str)
+@click.option('--save_dir', type=str)
+def train_svm_kfold(
+    feature_dir,
+    train_csv,
+    valid_csv,
+    config_dir,
+    classifier,
+    feature_name,
+    save_dir,
+):
+    train_df = pd.read_csv(train_csv)
+    valid_df = pd.read_csv(valid_csv)
+
+    le = LabelEncoder()
+    train_df['emotion'] = le.fit_transform(train_df['emotion'])
+    valid_df['emotion'] = le.transform(valid_df['emotion'])
+
+    X_train = np.load(f"{feature_dir}/train/features.npy")
+    X_valid = np.load(f"{feature_dir}/valid/features.npy")
+
+    y_train = train_df['emotion'].values
+    y_valid = valid_df['emotion'].values
+
+    assert X_train.shape[0] == train_df.shape[0]
+    assert X_valid.shape[0] == valid_df.shape[0]
+
+    feature_functions = ['mean', 'max', 'std']
+
+    X_video_train, y_video_train = feature_engineering(
+        X=X_train, y=y_train, df=train_df,
+        feature_funcs=['mean', 'max', 'std']
+    )
+
+    X_video_valid, y_video_valid = feature_engineering(
+        X=X_valid, y=y_valid, df=valid_df,
+        feature_funcs=['mean', 'max', 'std']
+    )
+
+    n_features = len(feature_functions)
+    feature_dims = X_video_train.shape[1] // n_features
+    print("Feature dims: ", feature_dims)
+    for i in range(n_features):
+        scaler = MinMaxScaler()
+        X_video_train[:, i:i + feature_dims] = scaler.fit_transform(X_video_train[:, i:i + feature_dims])
+        X_video_valid[:, i:i + feature_dims] = scaler.transform(X_video_valid[:, i:i + feature_dims])
+
+    X = np.concatenate([X_video_train, X_video_valid], axis=0)
+    y = np.concatenate([y_video_train, y_video_valid], axis=0)
+
+    kf = StratifiedKFold(n_splits=5, random_state=2411, shuffle=True)
+    oof_pred = np.zeros_like(y)
+    for fold, (train_idx, valid_idx) in enumerate(kf.split(X, y)):
+        X_train_fold, X_valid_fold = X[train_idx], X[valid_idx]
+        y_train_fold, y_valid_fold = y[train_idx], y[valid_idx]
+
+        config = load_config(config_dir, classifier, feature_name)
+        model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+        model.fit(X_train_fold, y_train_fold)
+
+        y_pred = model.predict_proba(X_valid_fold)
+        y_pred_cls = np.argmax(y_pred, axis=1)
+        print(feature_name)
+        print("Fold {}, Accuracy {}".format(fold, accuracy_score(y_valid_fold, y_pred_cls)))
+
+        oof_pred[valid_idx] = y_pred_cls
+
+        # Save model and valid's prediction
+        os.makedirs(f'{save_dir}/{feature_name}/{classifier}/', exist_ok=True)
+        save_model(save_dir=save_dir, classifier=classifier, feature_name=feature_name, fold=fold, model=model)
+        save_prediction(save_dir=save_dir, classifier=classifier, feature_name=feature_name, fold=fold, pred=y_pred)
+
+    print("KFOLD acccuracy: ", accuracy_score(y, oof_pred))
 
 
 if __name__ == '__main__':
