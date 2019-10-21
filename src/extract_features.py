@@ -47,6 +47,7 @@ def get_model_byname(model_name):
             "arch": model_name,
             "n_class": 7,
             "image_size": 256,
+            "pretrained": False,
         })
     return model
 

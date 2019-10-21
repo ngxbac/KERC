@@ -8,7 +8,7 @@ root=/media/ngxbac/Bac/dataset/KERC/faces/
 #fishnet99 inceptionresnetv2 inception_v3 inception_v4 resnet18 resnet34 resnet50 se_resnet50 se_resnext50_32x4d vggresnet
 for model in densenet121 fishnet99 inceptionresnetv2 inception_v3 inception_v4 resnet18 resnet34 resnet50 se_resnet50 se_resnext50_32x4d vggresnet; do
     checkpoint=/media/ngxbac/DATA/logs_emotiw_temporal/feature_extractor/$model/checkpoints/best.pth
-    for dataset in train valid; do
+    for dataset in test; do
         csv_file=./preprocessing/csv/${dataset}_face_clean.csv
         save_feature_dir=/media/ngxbac/DATA/logs_kerc/features/${model}/${dataset}
         python src/extract_features.py extract  --csv_file=$csv_file \

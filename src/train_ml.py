@@ -155,7 +155,7 @@ def get_data(train_csv, valid_csv, feature_dir):
 @click.option('--config_dir', type=str, default='ml_configs')
 @click.option('--feature_name', type=str)
 @click.option('--save_dir', type=str)
-def train_svm(
+def train_normal(
     feature_dir,
     train_csv,
     valid_csv,
@@ -167,7 +167,13 @@ def train_svm(
     X_video_train, X_video_valid, y_video_train, y_video_valid = get_data(train_csv, valid_csv, feature_dir)
 
     config = load_config(config_dir, classifier, feature_name)
-    model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+    # model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+    if classifier == 'svm':
+        model = SVC(kernel='linear', probability=True, C=config['svc_c'])
+    elif classifier == 'RandomForestClassifier':
+        model = RandomForestClassifier(n_estimators=config['n_estimators'])
+    else:
+        raise ValueError("Not support classifier: {}".format(classifier))
     model.fit(X_video_train, y_video_train)
     y_pred = model.predict_proba(X_video_valid)
     y_pred_cls = np.argmax(y_pred, axis=1)

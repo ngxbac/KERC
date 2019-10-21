@@ -117,6 +117,9 @@ def frame_df_to_face(df, face_dir):
     frame_names = []
     video_names = []
     emotions = []
+
+    import pdb
+    pdb.set_trace()
     for file, emotion, video_name in tqdm(zip(
         df.file, df.emotion, df.video_name
     ), total=len(df)):
@@ -162,41 +165,58 @@ def video_csv(dir):
 def preprocess():
     train_video_dir = "/media/ngxbac/Bac/dataset/KERC/video/train/"
     valid_video_dir = "/media/ngxbac/Bac/dataset/KERC/video/val/"
-    test_video_dir = None
+    test_video_dir = "/media/ngxbac/Bac/dataset/KERC/video/test/"
 
     train_frame_dir = "/media/ngxbac/Bac/dataset/KERC/frames/train/"
     valid_frame_dir = "/media/ngxbac/Bac/dataset/KERC/frames/val/"
-    test_frame_dir = None
+    test_frame_dir = "/media/ngxbac/Bac/dataset/KERC/frames/test/"
 
     train_face_dir = "/media/ngxbac/Bac/dataset/KERC/faces/train/"
     valid_face_dir = "/media/ngxbac/Bac/dataset/KERC/faces/val/"
-    test_face_dir = None
+    test_face_dir = "/media/ngxbac/Bac/dataset/KERC/faces/test/"
 
     csv_dir = "./csv/"
     os.makedirs(csv_dir, exist_ok=True)
 
-    if train_video_dir:
-        # train_df = video_csv(train_video_dir)
-        # train_df.to_csv(f"{csv_dir}/train_video.csv", index=False)
-        # # Extract video to frames
-        # os.makedirs(train_frame_dir, exist_ok=True)
-        # train_frame_df = video_df_to_frame(train_df, train_frame_dir)
-        # train_frame_df.to_csv(f"{csv_dir}/train_frame.csv", index=False)
-        train_frame_df = pd.read_csv(f"{csv_dir}/train_frame.csv")
-        # Extract detect face from frames
-        train_face_df = frame_df_to_face(train_frame_df, train_face_dir)
-        train_face_df.to_csv(f"{csv_dir}/train_face.csv", index=False)
+    # if train_video_dir:
+    #     # train_df = video_csv(train_video_dir)
+    #     # train_df.to_csv(f"{csv_dir}/train_video.csv", index=False)
+    #     # # Extract video to frames
+    #     # os.makedirs(train_frame_dir, exist_ok=True)
+    #     # train_frame_df = video_df_to_frame(train_df, train_frame_dir)
+    #     # train_frame_df.to_csv(f"{csv_dir}/train_frame.csv", index=False)
+    #     train_frame_df = pd.read_csv(f"{csv_dir}/train_frame.csv")
+    #     # Extract detect face from frames
+    #     train_face_df = frame_df_to_face(train_frame_df, train_face_dir)
+    #     train_face_df.to_csv(f"{csv_dir}/train_face.csv", index=False)
+    #
+    # if valid_video_dir:
+    #     valid_df = video_csv(valid_video_dir)
+    #     valid_df.to_csv(f"{csv_dir}/valid_video.csv", index=False)
+    #     # Extract video to frames
+    #     os.makedirs(valid_frame_dir, exist_ok=True)
+    #     valid_frame_df = video_df_to_frame(valid_df, valid_frame_dir)
+    #     valid_frame_df.to_csv(f"{csv_dir}/valid_frame.csv", index=False)
+    #     # Extract detect face from frames
+    #     valid_face_df = frame_df_to_face(valid_frame_df, valid_face_dir)
+    #     valid_face_df.to_csv(f"{csv_dir}/valid_face.csv", index=False)
 
-    if valid_video_dir:
-        valid_df = video_csv(valid_video_dir)
-        valid_df.to_csv(f"{csv_dir}/valid_video.csv", index=False)
+    if test_video_dir:
+        # test_df = video_csv(test_video_dir)
+        # overlap_df = pd.read_csv("./preprocessing/val_test_map.csv")
+        # test_df = test_df[~test_df['file'].isin(overlap_df['path_test'])].reset_index(drop=True)
+        # test_df.to_csv(f"{csv_dir}/test_video.csv", index=False)
+
+        # test_df = pd.read_csv(f"{csv_dir}/test_video.csv")
         # Extract video to frames
-        os.makedirs(valid_frame_dir, exist_ok=True)
-        valid_frame_df = video_df_to_frame(valid_df, valid_frame_dir)
-        valid_frame_df.to_csv(f"{csv_dir}/valid_frame.csv", index=False)
+        os.makedirs(test_frame_dir, exist_ok=True)
+        # test_frame_df = video_df_to_frame(test_df, test_frame_dir)
+        # test_frame_df.to_csv(f"{csv_dir}/test_frame.csv", index=False)
+
+        test_frame_df = pd.read_csv(f"{csv_dir}/test_frame.csv")
         # Extract detect face from frames
-        valid_face_df = frame_df_to_face(valid_frame_df, valid_face_dir)
-        valid_face_df.to_csv(f"{csv_dir}/valid_face.csv", index=False)
+        test_face_df = frame_df_to_face(test_frame_df, test_face_dir)
+        test_face_df.to_csv(f"{csv_dir}/test_face.csv", index=False)
 
 
 if __name__ == '__main__':
