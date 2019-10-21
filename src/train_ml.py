@@ -188,6 +188,7 @@ def train_svm(
 @click.option('--config_dir', type=str, default='ml_configs')
 @click.option('--feature_name', type=str)
 @click.option('--save_dir', type=str)
+@click.option('--kfold_idx_dir', type=str)
 def train_kfold(
     feature_dir,
     train_csv,
@@ -196,6 +197,7 @@ def train_kfold(
     classifier,
     feature_name,
     save_dir,
+    kfold_idx_dir,
 ):
     print("Classifier: {}".format(classifier))
     X_video_train, X_video_valid, y_video_train, y_video_valid = get_data(train_csv, valid_csv, feature_dir)
@@ -205,7 +207,11 @@ def train_kfold(
 
     kf = StratifiedKFold(n_splits=5, random_state=2411, shuffle=True)
     oof_pred = np.zeros_like(y)
-    for fold, (train_idx, valid_idx) in enumerate(kf.split(X, y)):
+    # for fold, (train_idx, valid_idx) in enumerate(kf.split(X, y)):
+    for fold in range(5):
+        train_idx = np.load(f"./{kfold_idx_dir}/train_{fold}.npy")
+        valid_idx = np.load(f"./{kfold_idx_dir}/valid_{fold}.npy")
+
         X_train_fold, X_valid_fold = X[train_idx], X[valid_idx]
         y_train_fold, y_valid_fold = y[train_idx], y[valid_idx]
 
